@@ -7,7 +7,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(100))
     notes = db.relationship("Note")
-    # points = db.relationship("Point")
+    points = db.relationship("Point")
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,9 +15,8 @@ class Note(db.Model):
     date = db.Column(db.DateTime(timezone=True), default=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
-
-# class Point(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     points = db.Column(db.Integer)
-#     point_date = db.Column(db.DateTime(timezone=True), default=func.now())
-#     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+class Point(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    points = db.Column(db.Integer)
+    point_date = db.Column(db.DateTime(timezone=True), default=func.now())
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))

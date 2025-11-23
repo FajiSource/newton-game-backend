@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, flash, jsonify
 from flask_login import login_required, current_user
+from flask_cors import CORS, cross_origin
 import json
 
 # NOTE: Importing models at module import time can sometimes trigger
@@ -9,6 +10,14 @@ import json
 # request-handling functions where they're actually needed.
 
 view = Blueprint("views", __name__)
+cors = CORS(view, resources={
+    r"/*": {
+        "origins": "http://localhost:5173",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # NOTE: The correct Flask parameter name is `methods` (plural).
 # Using `method=[...]` will raise TypeError: unexpected keyword argument 'method'.
@@ -75,3 +84,63 @@ def delete_note():
     db.session.delete(note)
     db.session.commit()
     return jsonify({})
+
+@view.route("/save-points", methods=["POST", "OPTIONS"])
+@cross_origin(origins="http://localhost:5173", supports_credentials=True)
+@login_required
+def save_points():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    
+    from .models import Point
+    from . import db
+    
+    try:
+        data = request.json if request.is_json else request.form
+        points = data.get("points")
+        
+        if points is None:
+            response = jsonify({
+                "status": 406,
+                "message": "Points value is required"
+            })
+            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 406
+        
+        try:
+            points = int(points)
+        except (ValueError, TypeError):
+            response = jsonify({
+                "status": 406,
+                "message": "Points must be a number"
+            })
+            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 406
+        
+        new_point = Point(points=points, user_id=current_user.id)
+        db.session.add(new_point)
+        db.session.commit()
+        
+        response = jsonify({
+            "status": 200,
+            "message": "Points saved successfully!",
+            "points": points
+        })
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        response = jsonify({
+            "status": 500,
+            "message": f"Error saving points: {str(e)}"
+        })
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500

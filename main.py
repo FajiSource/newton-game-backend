@@ -6,7 +6,7 @@ app=create_app()
 
 cors = CORS(app, resources={
     r"/*": {
-        "origins": "http://localhost:5173",
+        "origins": ["http://localhost:5173", "https://newton-game-xv9d.vercel.app"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True

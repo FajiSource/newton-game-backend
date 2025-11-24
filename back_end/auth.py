@@ -4,21 +4,31 @@ from flask_login import logout_user, login_user, login_required, current_user
 from flask_cors import CORS, cross_origin
 
 auth = Blueprint("auth", __name__)
+
+# Allowed origins for CORS
+ALLOWED_ORIGINS = ["http://localhost:5173", "https://newton-game-xv9d.vercel.app"]
+
+def get_allowed_origin():
+    """Get the allowed origin from the request, or return the first allowed origin."""
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        return origin
+    return ALLOWED_ORIGINS[0]
 cors = CORS(auth, resources={
     r"/*": {
-        "origins": "http://localhost:5173",
+        "origins": ["http://localhost:5173", "https://newton-game-xv9d.vercel.app"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
 
-@cross_origin(origins="http://localhost:5173", supports_credentials=True)
+@cross_origin(origins=["http://localhost:5173", "https://newton-game-xv9d.vercel.app"], supports_credentials=True)
 @auth.route("/login", methods=["GET", "POST", "OPTIONS"])
 def login():
     if request.method == "OPTIONS":
         response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
         response.headers.add("Access-Control-Allow-Credentials", "true")
@@ -46,7 +56,7 @@ def login():
                     "message": "Account logged in Successfully!",
                     "username": user.username
                 })
-                response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+                response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
                 response.headers.add("Access-Control-Allow-Credentials", "true")
                 return response
             else:
@@ -54,7 +64,7 @@ def login():
                     "status": 406,
                     "message": "Incorrect Password!"
                 })
-                response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+                response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
                 response.headers.add("Access-Control-Allow-Credentials", "true")
                 return response
         else:
@@ -62,7 +72,7 @@ def login():
                 "status": 406,
                 "message": "Email does not exist"
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
         
@@ -70,16 +80,16 @@ def login():
         "status": 200,
         "message": "Logged In Successfully!"
     })
-    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
     response.headers.add("Access-Control-Allow-Credentials", "true")
     return response
 
-@cross_origin(origins="http://localhost:5173", supports_credentials=True)
+@cross_origin(origins=["http://localhost:5173", "https://newton-game-xv9d.vercel.app"], supports_credentials=True)
 @auth.route("/logout", methods=["GET", "OPTIONS"])
 def logout():
     if request.method == "OPTIONS":
         response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
         response.headers.add("Access-Control-Allow-Credentials", "true")
@@ -90,16 +100,16 @@ def logout():
         "status": 200,
         "message": "Logged out Successfully!"
     })
-    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
     response.headers.add("Access-Control-Allow-Credentials", "true")
     return response
 
 @auth.route("/sign-up", methods=["GET", "POST", "OPTIONS"])
-@cross_origin(origins="http://localhost:5173", supports_credentials=True)
+@cross_origin(origins=["http://localhost:5173", "https://newton-game-xv9d.vercel.app"], supports_credentials=True)
 def sign_up():
     if request.method == "OPTIONS":
         response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
         response.headers.add("Access-Control-Allow-Credentials", "true")
@@ -122,7 +132,7 @@ def sign_up():
                 "status": 406,
                 "message": "Username Already Exist!"
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
         elif len(username) < 4:
@@ -130,7 +140,7 @@ def sign_up():
                 "status": 406,
                 "message": "Username must be more than 4 characters."
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
         elif len(password1) < 7:
@@ -138,7 +148,7 @@ def sign_up():
                 "status": 406,
                 "message": "Password must contain more than 6 characters."
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
         elif password1 != password2:
@@ -146,7 +156,7 @@ def sign_up():
                 "status": 406,
                 "message": "Password don't match!"
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response
         else:
@@ -156,7 +166,7 @@ def sign_up():
                     "status": 406,
                     "message": "Username already exists."
                 })
-                response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+                response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
                 response.headers.add("Access-Control-Allow-Credentials", "true")
                 return response
             else:
@@ -169,7 +179,7 @@ def sign_up():
                     "message": "Done Creating Account!",
                     "username": new_user.username
                 })
-                response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+                response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
                 response.headers.add("Access-Control-Allow-Credentials", "true")
                 return response
 
@@ -177,6 +187,6 @@ def sign_up():
         "status": 200,
         "message": "Account Created"
     })
-    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
     response.headers.add("Access-Control-Allow-Credentials", "true")
     return response

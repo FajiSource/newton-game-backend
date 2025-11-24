@@ -10,9 +10,20 @@ import json
 # request-handling functions where they're actually needed.
 
 view = Blueprint("views", __name__)
+
+# Allowed origins for CORS
+ALLOWED_ORIGINS = ["http://localhost:5173", "https://newton-game-xv9d.vercel.app"]
+
+def get_allowed_origin():
+    """Get the allowed origin from the request, or return the first allowed origin."""
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        return origin
+    return ALLOWED_ORIGINS[0]
+
 cors = CORS(view, resources={
     r"/*": {
-        "origins": "http://localhost:5173",
+        "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -86,12 +97,12 @@ def delete_note():
     return jsonify({})
 
 @view.route("/save-points", methods=["POST", "OPTIONS"])
-@cross_origin(origins="http://localhost:5173", supports_credentials=True)
+@cross_origin(origins=["http://localhost:5173", "https://newton-game-xv9d.vercel.app"], supports_credentials=True)
 @login_required
 def save_points():
     if request.method == "OPTIONS":
         response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
         response.headers.add("Access-Control-Allow-Credentials", "true")
@@ -109,7 +120,7 @@ def save_points():
                 "status": 406,
                 "message": "Points value is required"
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response, 406
         
@@ -120,7 +131,7 @@ def save_points():
                 "status": 406,
                 "message": "Points must be a number"
             })
-            response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+            response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
             response.headers.add("Access-Control-Allow-Credentials", "true")
             return response, 406
         
@@ -133,7 +144,7 @@ def save_points():
             "message": "Points saved successfully!",
             "points": points
         })
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response
     except Exception as e:
@@ -141,6 +152,6 @@ def save_points():
             "status": 500,
             "message": f"Error saving points: {str(e)}"
         })
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Origin", get_allowed_origin())
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response, 500

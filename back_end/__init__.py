@@ -25,7 +25,7 @@ def create_app():
     app.register_blueprint(auth, url_prefix="/")
     app.register_blueprint(leaderboard, url_prefix="/")
 
-    from .models import User, Note, Point
+    from .models import User, Note, Point, UserCompletion, GameScore
 
     create_database(app)
 

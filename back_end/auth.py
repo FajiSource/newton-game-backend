@@ -63,7 +63,7 @@ def login():
         else:
             response = jsonify({
                 "status": 406,
-                "message": "Email does not exist"
+                "message": "Username does not exist"
             })
             return response
         

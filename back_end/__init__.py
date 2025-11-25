@@ -10,8 +10,22 @@ def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "e3b9c4f1d8c2a77a0e948df2b2f31cf0e034d5231af3c4df9a58bbca19d7c3f1"
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["SESSION_COOKIE_SECURE"] = False
+    
+    import os
+    is_production = (
+        'RENDER' in os.environ or 
+        os.environ.get('FLASK_ENV') == 'production' or 
+        os.environ.get('ENVIRONMENT') == 'production' or
+        os.environ.get('PRODUCTION') == 'true'
+    )
+    
+    if is_production:
+        app.config["SESSION_COOKIE_SAMESITE"] = "None"
+        app.config["SESSION_COOKIE_SECURE"] = True
+    else:
+        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+        app.config["SESSION_COOKIE_SECURE"] = False
+    
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_DOMAIN"] = None
     app.config["PERMANENT_SESSION_LIFETIME"] = 86400

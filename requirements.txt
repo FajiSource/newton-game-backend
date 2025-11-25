@@ -4,3 +4,5 @@ Flask-Login==0.6.3
 Flask-CORS==4.0.0
 Werkzeug==3.0.1
 gunicorn
+Flask-Session==0.6.0
+redis==5.0.1

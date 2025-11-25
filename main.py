@@ -1,22 +1,24 @@
 from back_end import create_app
-from flask_cors import CORS, cross_origin
-
+from flask_cors import CORS
+from flask_session import Session
+import redis
 
 app=create_app()
 
 cors = CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "https://newton-game-xv9d.vercel.app"],
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173", "https://newton-game-xv9d.vercel.app"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
+        "supports_credentials": True,
+        "expose_headers": ["Set-Cookie"]
     }
 })
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='localhost', port=5000, debug=True)
+
 
 
 # Modification:

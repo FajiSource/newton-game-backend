@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, request, flash, jsonify
+from flask import Blueprint, render_template, request, flash, jsonify,send_file
 from flask_login import login_required, current_user
+
 import json
+import os
 
 view = Blueprint("views", __name__)
 
@@ -485,3 +487,22 @@ def save_game_score():
         response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response, 500
+    
+
+@view.route('/list-files')
+def list_files():
+    folder = "/opt/render/project/src"
+    return jsonify(os.listdir(folder))
+
+@view.route('/backup-db')
+def backup_db():
+    db_path = "/opt/render/project/src/instance/database.db"  
+
+    if not os.path.exists(db_path):
+        return {"error": "database.db not found"}, 404
+
+    return send_file(
+        db_path,
+        as_attachment=True,
+        download_name="database-backup.db"
+    )

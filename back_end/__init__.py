@@ -9,8 +9,6 @@ DB_NAME = "database.db"
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "e3b9c4f1d8c2a77a0e948df2b2f31cf0e034d5231af3c4df9a58bbca19d7c3f1"
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://newton_sql_user:oAtmS7kqvn3F0jxyBJOuxPjJflJIGJNU@dpg-d4k78aje5dus73f1vls0-a.oregon-postgres.render.com/newton_sql" #f"sqlite:///{DB_NAME}"
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     import os
     is_production = (
@@ -19,6 +17,14 @@ def create_app():
         os.environ.get('ENVIRONMENT') == 'production' or
         os.environ.get('PRODUCTION') == 'true'
     )
+    
+    if is_production:
+        database_url = os.environ.get('DATABASE_URL') or "postgresql://newton_sql_user:oAtmS7kqvn3F0jxyBJOuxPjJflJIGJNU@dpg-d4k78aje5dus73f1vls0-a.oregon-postgres.render.com/newton_sql"
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
+    
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     if is_production:
         app.config["SESSION_COOKIE_SAMESITE"] = "None"

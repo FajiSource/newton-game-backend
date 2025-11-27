@@ -90,15 +90,27 @@ def logout():
 def check_session():
     if request.method == "OPTIONS":
         response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
         return response
     
     from flask_login import current_user
+    from flask import session
+    
     if current_user.is_authenticated:
+        session.permanent = True
+        session.modified = True
         response = jsonify({
             "status": 200,
             "authenticated": True,
             "username": current_user.username
         })
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add("Access-Control-Allow-Credentials", "true")
         return response
     else:
         response = jsonify({
@@ -106,6 +118,10 @@ def check_session():
             "authenticated": False,
             "message": "Not authenticated"
         })
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add("Access-Control-Allow-Credentials", "true")
         return response, 401
 
 @auth.route("/sign-up", methods=["GET", "POST", "OPTIONS"])

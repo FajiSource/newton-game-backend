@@ -18,18 +18,3 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 if __name__ == "__main__":
     app.run(host='localhost', port=5000, debug=True)
-
-
-
-# Modification:
-# sa user ang attributes nalang ay username, password & password confirmation
-# note -> feedback
-
-# Dagdag:
-# Leaderboards (LIVE)
-
-#ang magagamit ay:
-# all about user
-
-#pag aaralan:
-#TOKEN

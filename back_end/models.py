@@ -8,6 +8,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(100))
     notes = db.relationship("Note")
     points = db.relationship("Point")
+    completion = db.relationship("UserCompletion", backref="user", uselist=False)
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,3 +43,13 @@ class GameScore(db.Model):
     completed = db.Column(db.Boolean, default=False)
     updated_date = db.Column(db.DateTime(timezone=True), default=func.now(), onupdate=func.now())
     __table_args__ = (db.UniqueConstraint('user_id', 'game_type', 'level', name='unique_user_game_level'),)
+
+class Feedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    username = db.Column(db.String(150))  # Store username for display
+    game_type = db.Column(db.String(50), nullable=True)  # null for overall feedback
+    stars = db.Column(db.Integer)  # 1-5 stars
+    comment = db.Column(db.Text)
+    created_date = db.Column(db.DateTime(timezone=True), default=func.now())
+    user = db.relationship("User", backref="feedbacks")

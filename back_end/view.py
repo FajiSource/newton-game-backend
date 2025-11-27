@@ -453,11 +453,20 @@ def save_game_score():
             db.session.add(game_score)
             points_to_add = score
         else:
-            if score > game_score.best_score:
-                points_to_add = score - game_score.best_score
-                game_score.best_score = score
+            was_already_completed = game_score.completed
+            
+            if was_already_completed:
+                if score > game_score.best_score:
+                    points_to_add = score - game_score.best_score
+                    game_score.best_score = score
+                else:
+                    points_to_add = 0
             else:
-                points_to_add = 0
+                if score > game_score.best_score:
+                    points_to_add = score - game_score.best_score
+                    game_score.best_score = score
+                else:
+                    points_to_add = 0
             
             if completed:
                 game_score.completed = True
@@ -506,3 +515,189 @@ def backup_db():
         as_attachment=True,
         download_name="database-backup.db"
     )
+
+@view.route("/save-feedback", methods=["POST", "OPTIONS"])
+def save_feedback():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
+    
+    from flask_login import current_user
+    from flask import session
+    from .models import Feedback
+    from . import db
+    
+    if current_user.is_authenticated:
+        session.permanent = True
+        session.modified = True
+    
+    if not current_user.is_authenticated:
+        response = jsonify({
+            "status": 401,
+            "message": "Authentication required. Please login again."
+        })
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 401
+    
+    try:
+        data = request.json if request.is_json else request.form
+        stars = data.get("stars")
+        comment = data.get("comment", "").strip()
+        
+        if not stars:
+            response = jsonify({
+                "status": 406,
+                "message": "Stars rating is required"
+            })
+            response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 406
+        
+        try:
+            stars = int(stars)
+            if stars < 1 or stars > 5:
+                raise ValueError("Stars must be between 1 and 5")
+        except (ValueError, TypeError):
+            response = jsonify({
+                "status": 406,
+                "message": "Stars must be a number between 1 and 5"
+            })
+            response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 406
+        
+        new_feedback = Feedback(
+            user_id=current_user.id,
+            username=current_user.username,
+            game_type=None,
+            stars=stars,
+            comment=comment
+        )
+        db.session.add(new_feedback)
+        db.session.commit()
+        
+        response = jsonify({
+            "status": 200,
+            "message": "Feedback saved successfully!",
+            "feedback": {
+                "id": new_feedback.id,
+                "stars": new_feedback.stars,
+                "comment": new_feedback.comment,
+                "gameType": new_feedback.game_type
+            }
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        print(f"Error in save_feedback: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({
+            "status": 500,
+            "message": f"Error saving feedback: {str(e)}"
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500
+
+@view.route("/get-feedbacks", methods=["GET", "OPTIONS"])
+def get_feedbacks():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
+    
+    from .models import Feedback
+    from sqlalchemy import desc
+    
+    try:
+        limit = request.args.get("limit", type=int, default=50)
+        
+        # Get overall feedbacks only (game_type is null)
+        feedbacks = Feedback.query.filter(
+            Feedback.game_type.is_(None)
+        ).order_by(desc(Feedback.created_date)).limit(limit).all()
+        
+        feedbacks_data = [{
+            "id": fb.id,
+            "username": fb.username,
+            "gameType": fb.game_type,
+            "stars": fb.stars,
+            "comment": fb.comment,
+            "createdDate": fb.created_date.isoformat() if fb.created_date else None
+        } for fb in feedbacks]
+        
+        response = jsonify({
+            "status": 200,
+            "feedbacks": feedbacks_data,
+            "count": len(feedbacks_data)
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        print(f"Error in get_feedbacks: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({
+            "status": 500,
+            "message": f"Error getting feedbacks: {str(e)}"
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500
+
+@view.route("/get-dedicated-members", methods=["GET", "OPTIONS"])
+def get_dedicated_members():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
+    
+    from .models import UserCompletion, User
+    from sqlalchemy import desc
+    
+    try:
+        # Get users who completed all games
+        dedicated_completions = UserCompletion.query.filter(
+            UserCompletion.all_completed == True
+        ).order_by(desc(UserCompletion.completed_date)).limit(100).all()
+        
+        members_data = [{
+            "username": completion.user.username if completion.user else "Unknown",
+            "completedDate": completion.completed_date.isoformat() if completion.completed_date else None
+        } for completion in dedicated_completions]
+        
+        response = jsonify({
+            "status": 200,
+            "members": members_data,
+            "count": len(members_data)
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        print(f"Error in get_dedicated_members: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({
+            "status": 500,
+            "message": f"Error getting dedicated members: {str(e)}"
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500

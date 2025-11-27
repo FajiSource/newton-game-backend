@@ -128,51 +128,64 @@ def check_session():
 def sign_up():
     if request.method == "OPTIONS":
         response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
         return response
     
     if request.method == "POST":
-        data = request.json if request.is_json else request.form
-        username = data.get("username") or ""
-            
-        password1 = data.get("password1") or ""
-        password2 = data.get("password2") or ""
+        try:
+            data = request.json if request.is_json else request.form
+            username = data.get("username") or ""
+                
+            password1 = data.get("password1") or ""
+            password2 = data.get("password2") or ""
 
-        from .models import User
-        from . import db
+            from .models import User
+            from . import db
 
-        user = User.query.filter_by(username=username).first()
-
-        if user:
-            response = jsonify({
-                "status": 406,
-                "message": "Username Already Exist!"
-            })
-            return response
-        elif len(username) < 4:
-            response = jsonify({
-                "status": 406,
-                "message": "Username must be more than 4 characters."
-            })
-            return response
-        elif len(password1) < 7:
-            response = jsonify({
-                "status": 406,
-                "message": "Password must contain more than 6 characters."
-            })
-            return response
-        elif password1 != password2:
-            response = jsonify({
-                "status": 406,
-                "message": "Password don't match!"
-            })
-            return response
-        else:
             user = User.query.filter_by(username=username).first()
+
             if user:
                 response = jsonify({
                     "status": 406,
-                    "message": "Username already exists."
+                    "message": "Username Already Exist!"
                 })
+                origin = request.headers.get("Origin")
+                if origin:
+                    response.headers.add("Access-Control-Allow-Origin", origin)
+                response.headers.add("Access-Control-Allow-Credentials", "true")
+                return response
+            elif len(username) < 4:
+                response = jsonify({
+                    "status": 406,
+                    "message": "Username must be more than 4 characters."
+                })
+                origin = request.headers.get("Origin")
+                if origin:
+                    response.headers.add("Access-Control-Allow-Origin", origin)
+                response.headers.add("Access-Control-Allow-Credentials", "true")
+                return response
+            elif len(password1) < 7:
+                response = jsonify({
+                    "status": 406,
+                    "message": "Password must contain more than 6 characters."
+                })
+                origin = request.headers.get("Origin")
+                if origin:
+                    response.headers.add("Access-Control-Allow-Origin", origin)
+                response.headers.add("Access-Control-Allow-Credentials", "true")
+                return response
+            elif password1 != password2:
+                response = jsonify({
+                    "status": 406,
+                    "message": "Password don't match!"
+                })
+                origin = request.headers.get("Origin")
+                if origin:
+                    response.headers.add("Access-Control-Allow-Origin", origin)
+                response.headers.add("Access-Control-Allow-Credentials", "true")
                 return response
             else:
                 new_user = User(username=username, password=generate_password_hash(password1, method="pbkdf2:sha256"))
@@ -195,9 +208,26 @@ def sign_up():
                 response.headers.add("Access-Control-Allow-Credentials", "true")
                 
                 return response
+        except Exception as e:
+            import traceback
+            print(f"Error in sign_up: {str(e)}")
+            traceback.print_exc()
+            response = jsonify({
+                "status": 500,
+                "message": f"Server error: {str(e)}"
+            })
+            origin = request.headers.get("Origin")
+            if origin:
+                response.headers.add("Access-Control-Allow-Origin", origin)
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 500
 
     response = jsonify({
         "status": 200,
         "message": "Account Created"
     })
+    origin = request.headers.get("Origin")
+    if origin:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+    response.headers.add("Access-Control-Allow-Credentials", "true")
     return response

@@ -11,20 +11,23 @@ def create_app():
     app.config["SECRET_KEY"] = "e3b9c4f1d8c2a77a0e948df2b2f31cf0e034d5231af3c4df9a58bbca19d7c3f1"
     
     import os
+    
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        database_url = "postgresql://newton_sql_user:oAtmS7kqvn3F0jxyBJOuxPjJflJIGJNU@dpg-d4k78aje5dus73f1vls0-a.oregon-postgres.render.com/newton_sql"
+    
+    if database_url.startswith('postgresql://'):
+        database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    
     is_production = (
         'RENDER' in os.environ or 
         os.environ.get('FLASK_ENV') == 'production' or 
         os.environ.get('ENVIRONMENT') == 'production' or
         os.environ.get('PRODUCTION') == 'true'
     )
-    
-    if is_production:
-        database_url = os.environ.get('DATABASE_URL') or "postgresql://newton_sql_user:oAtmS7kqvn3F0jxyBJOuxPjJflJIGJNU@dpg-d4k78aje5dus73f1vls0-a.oregon-postgres.render.com/newton_sql"
-        if database_url.startswith('postgresql://'):
-            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
-        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    else:
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
@@ -71,7 +74,29 @@ def create_app():
     return app
 
 def create_database(app):
-    if not path.exists("back_end/" + DB_NAME):
-        with app.app_context():
+    with app.app_context():
+        try:
             db.create_all()
-        print("Create Database!")
+            
+            from sqlalchemy import text
+            try:
+                with db.engine.begin() as conn:
+                    result = conn.execute(text("""
+                        SELECT character_maximum_length 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'user' AND column_name = 'password'
+                    """))
+                    row = result.fetchone()
+                    if row and row[0] and row[0] < 200:
+                        conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN password TYPE VARCHAR(200)"))
+                        print("Updated password column to VARCHAR(200)")
+            except Exception as alter_error:
+                print(f"Note: Could not alter password column (may not exist yet or already updated): {alter_error}")
+            
+            print(f"PostgreSQL database tables created/verified successfully!")
+            print(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[1] if '@' in app.config['SQLALCHEMY_DATABASE_URI'] else 'configured'}")
+        except Exception as e:
+            print(f"Error creating database tables: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise

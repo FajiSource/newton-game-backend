@@ -20,6 +20,8 @@ def create_app():
     
     if is_production:
         database_url = os.environ.get('DATABASE_URL') or "postgresql://newton_sql_user:oAtmS7kqvn3F0jxyBJOuxPjJflJIGJNU@dpg-d4k78aje5dus73f1vls0-a.oregon-postgres.render.com/newton_sql"
+        if database_url.startswith('postgresql://'):
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
         app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"

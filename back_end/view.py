@@ -396,6 +396,7 @@ def save_game_score():
     from .models import GameScore
     from . import db
     from sqlalchemy.sql import func
+    from sqlalchemy.exc import IntegrityError
     
     if not current_user.is_authenticated:
         response = jsonify({
@@ -473,7 +474,39 @@ def save_game_score():
             
             game_score.updated_date = func.now()
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            game_score = GameScore.query.filter_by(
+                user_id=current_user.id,
+                game_type=game_type,
+                level=level
+            ).first()
+            
+            if game_score:
+                was_already_completed = game_score.completed
+                
+                if was_already_completed:
+                    if score > game_score.best_score:
+                        points_to_add = score - game_score.best_score
+                        game_score.best_score = score
+                    else:
+                        points_to_add = 0
+                else:
+                    if score > game_score.best_score:
+                        points_to_add = score - game_score.best_score
+                        game_score.best_score = score
+                    else:
+                        points_to_add = 0
+                
+                if completed:
+                    game_score.completed = True
+                
+                game_score.updated_date = func.now()
+                db.session.commit()
+            else:
+                raise
         
         response = jsonify({
             "status": 200,

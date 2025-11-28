@@ -581,6 +581,57 @@ def check_user_feedback():
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response, 500
 
+@view.route("/check-game-progress", methods=["GET", "OPTIONS"])
+def check_game_progress():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
+    
+    from flask_login import current_user
+    from .models import GameScore
+    
+    if not current_user.is_authenticated:
+        response = jsonify({
+            "status": 401,
+            "message": "Authentication required",
+            "hasCompletedGame": False
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 401
+    
+    try:
+        completed_game = GameScore.query.filter_by(
+            user_id=current_user.id,
+            completed=True
+        ).first()
+        
+        has_completed_game = completed_game is not None
+        
+        response = jsonify({
+            "status": 200,
+            "hasCompletedGame": has_completed_game
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        print(f"Error in check_game_progress: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({
+            "status": 500,
+            "message": f"Error checking game progress: {str(e)}",
+            "hasCompletedGame": False
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500
+
 @view.route('/list-files')
 def list_files():
     folder = "/opt/render/project/src"

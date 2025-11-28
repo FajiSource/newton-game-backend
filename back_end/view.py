@@ -529,7 +529,57 @@ def save_game_score():
         response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response, 500
+
+@view.route("/check-user-feedback", methods=["GET", "OPTIONS"])
+def check_user_feedback():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
     
+    from flask_login import current_user
+    from .models import Feedback
+    
+    if not current_user.is_authenticated:
+        response = jsonify({
+            "status": 401,
+            "message": "Authentication required",
+            "hasFeedback": False
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 401
+    
+    try:
+        user_feedback = Feedback.query.filter_by(
+            user_id=current_user.id,
+            game_type=None
+        ).first()
+        
+        has_feedback = user_feedback is not None
+        
+        response = jsonify({
+            "status": 200,
+            "hasFeedback": has_feedback
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+    except Exception as e:
+        print(f"Error in check_user_feedback: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({
+            "status": 500,
+            "message": f"Error checking user feedback: {str(e)}",
+            "hasFeedback": False
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 500
 
 @view.route('/list-files')
 def list_files():

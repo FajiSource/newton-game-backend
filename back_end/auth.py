@@ -35,10 +35,37 @@ def login():
                 session.permanent = True
                 session.modified = True
                 
+                feedback_result = {"status": 200, "hasFeedback": False}
+                game_progress_result = {"status": 200, "hasCompletedGame": False}
+                
+                try:
+                    from .models import Feedback, GameScore
+                    user_feedback = Feedback.query.filter_by(
+                        user_id=user.id,
+                        game_type=None
+                    ).first()
+                    feedback_result["hasFeedback"] = user_feedback is not None
+                except Exception as e:
+                    print(f"Error checking feedback in login: {str(e)}")
+                    feedback_result["status"] = 500
+                
+                try:
+                    from .models import GameScore
+                    completed_game = GameScore.query.filter_by(
+                        user_id=user.id,
+                        completed=True
+                    ).first()
+                    game_progress_result["hasCompletedGame"] = completed_game is not None
+                except Exception as e:
+                    print(f"Error checking game progress in login: {str(e)}")
+                    game_progress_result["status"] = 500
+                
                 response = make_response(jsonify({
                     "status": 200,
                     "message": "Account logged in Successfully!",
-                    "username": user.username
+                    "username": user.username,
+                    "feedbackResult": feedback_result,
+                    "gameProgressResult": game_progress_result
                 }))
                 
                 origin = request.headers.get("Origin")
